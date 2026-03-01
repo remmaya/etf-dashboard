@@ -42,7 +42,7 @@ raw = load_data()
 fx = raw["USDJPY=X"].dropna()
 
 # ----------------------------------------
-# 各ETFをカード式で縦に並べて表示
+# 各ETFを縦にそのまま表示（Expander なし）
 # ----------------------------------------
 for ticker in TARGET_ETFS:
 
@@ -66,59 +66,61 @@ for ticker in TARGET_ETFS:
         continue
 
     perf_pct = (df["Close"].iloc[-1] / df["Close"].iloc[0] - 1) * 100
-
     label = ETF_INFO.get(ticker, ticker)
-    title = f"{ticker}（{label}）｜ {perf_pct:+.2f}%"
 
-    with st.expander(title):
+    # 見出し（タップ不要で常に表示）
+    st.markdown(f"### {ticker}（{label}）｜ {perf_pct:+.2f}%  [{cur}]")
 
-        if view_mode == "Price":
-            import plotly.graph_objects as go
+    if view_mode == "Price":
+        import plotly.graph_objects as go
 
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=df.index, y=df["Close"],
-                mode="lines", name="Price"
-            ))
-            fig.update_layout(
-                height=280,
-                margin=dict(l=20, r=20, t=40, b=20),
-                title=f"{ticker}（{label}） [{cur}]",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=df.index, y=df["Close"],
+            mode="lines", name="Price"
+        ))
+        fig.update_layout(
+            height=280,
+            margin=dict(l=20, r=20, t=40, b=20),
+            showlegend=False,
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-        else:  # MACD+RSI
-            import plotly.graph_objects as go
+    else:  # MACD+RSI
+        import plotly.graph_objects as go
 
-            macd_line, signal_line = macd(df["Close"])
-            rsi_line = rsi(df["Close"])
+        macd_line, signal_line = macd(df["Close"])
+        rsi_line = rsi(df["Close"])
 
-            # --- MACD ---
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=df.index, y=macd_line, name="MACD"
-            ))
-            fig.add_trace(go.Scatter(
-                x=df.index, y=signal_line, name="Signal"
-            ))
-            fig.update_layout(
-                height=300,
-                margin=dict(l=20, r=20, t=40, b=20),
-                title=f"{ticker}（{label}） MACD [{cur}]",
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        # --- MACD ---
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=df.index, y=macd_line, name="MACD"
+        ))
+        fig.add_trace(go.Scatter(
+            x=df.index, y=signal_line, name="Signal"
+        ))
+        fig.update_layout(
+            height=260,
+            margin=dict(l=20, r=20, t=40, b=20),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-            # --- RSI ---
-            fig2 = go.Figure()
-            fig2.add_trace(go.Scatter(
-                x=df.index, y=rsi_line, name="RSI"
-            ))
-            for lvl in [30, 50, 70]:
-                fig2.add_hline(y=lvl, line_dash="dot")
+        # --- RSI ---
+        fig2 = go.Figure()
+        fig2.add_trace(go.Scatter(
+            x=df.index, y=rsi_line, name="RSI"
+        ))
+        for lvl in [30, 50, 70]:
+            fig2.add_hline(y=lvl, line_dash="dot")
 
-            fig2.update_layout(
-                height=200,
-                margin=dict(l=20, r=20, t=20, b=20),
-                title=f"{ticker}（{label}） RSI [{cur}]",
-            )
-            st.plotly_chart(fig2, use_container_width=True)
+        fig2.update_layout(
+            height=200,
+            margin=dict(l=20, r=20, t=20, b=20),
+            showlegend=False,
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # ETFごとに少し余白
+    st.markdown("---")
