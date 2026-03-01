@@ -87,40 +87,67 @@ for ticker in TARGET_ETFS:
         st.plotly_chart(fig, use_container_width=True)
 
     else:  # MACD+RSI
-        import plotly.graph_objects as go
+    import plotly.graph_objects as go
 
-        macd_line, signal_line = macd(df["Close"])
-        rsi_line = rsi(df["Close"])
+    macd_line, signal_line = macd(df["Close"])
+    rsi_line = rsi(df["Close"])
 
-        # --- MACD ---
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=df.index, y=macd_line, name="MACD"
-        ))
-        fig.add_trace(go.Scatter(
-            x=df.index, y=signal_line, name="Signal"
-        ))
-        fig.update_layout(
-            height=260,
-            margin=dict(l=20, r=20, t=40, b=20),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    # -------------------------
+    # MACD（MACD=青・Signal=赤）
+    # -------------------------
+    fig = go.Figure()
+
+    # MACD（青）
+    fig.add_trace(go.Scatter(
+        x=df.index, y=macd_line,
+        name="MACD",
+        line=dict(color="blue", width=2)
+    ))
+
+    # Signal（赤）
+    fig.add_trace(go.Scatter(
+        x=df.index, y=signal_line,
+        name="Signal",
+        line=dict(color="red", width=2)
+    ))
+
+    fig.update_layout(
+        height=260,
+        margin=dict(l=20, r=20, t=40, b=20),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02,
+                    xanchor="right", x=1),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+    # -------------------------
+    # RSI（棒グラフ表示 + 基準線）
+    # -------------------------
+    fig2 = go.Figure()
+
+    # RSI を棒グラフに
+    fig2.add_trace(go.Bar(
+        x=df.index,
+        y=rsi_line,
+        name="RSI",
+        marker_color="rgba(100, 100, 255, 0.6)",  # 見やすい青系
+    ))
+
+    # 基準線 30 / 50 / 70
+    for lvl in [30, 50, 70]:
+        fig2.add_hline(
+            y=lvl,
+            line_dash="dot",
+            line_color="gray"
         )
-        st.plotly_chart(fig, use_container_width=True)
 
-        # --- RSI ---
-        fig2 = go.Figure()
-        fig2.add_trace(go.Scatter(
-            x=df.index, y=rsi_line, name="RSI"
-        ))
-        for lvl in [30, 50, 70]:
-            fig2.add_hline(y=lvl, line_dash="dot")
+    fig2.update_layout(
+        height=200,
+        margin=dict(l=20, r=20, t=20, b=20),
+        showlegend=False,
+        yaxis=dict(range=[0, 100])  # RSI の上下レンジ固定
+    )
 
-        fig2.update_layout(
-            height=200,
-            margin=dict(l=20, r=20, t=20, b=20),
-            showlegend=False,
-        )
-        st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
 
     # ETFごとに少し余白
     st.markdown("---")
