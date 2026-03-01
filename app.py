@@ -2,11 +2,11 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import plotly.graph_objects as go
 
 from core import macd, rsi, slice_period, ETF_INFO
 
-TARGET_ETFS = ["ICLN", "IEMG", "IXP"]  # まずは3つでプロトタイプ
+# ETF_INFO のキー（ティッカー）をそのまま使う：8銘柄全部が対象
+TARGET_ETFS = list(ETF_INFO.keys())
 
 st.set_page_config(page_title="ETF Dashboard", layout="centered")
 st.title("ETF Dashboard（Price / MACD / RSI）")
@@ -23,11 +23,12 @@ with st.sidebar:
 
     st.markdown("---")
     if st.button("🔄 データ更新"):
+        # キャッシュクリア & 再実行
         st.cache_data.clear()
-        st.experimental_rerun()
+        st.rerun()
 
 # ----------------------------------------
-# データ取得（cacheつき）
+# データ取得（cache付き）
 # ----------------------------------------
 @st.cache_data
 def load_data():
@@ -37,7 +38,7 @@ def load_data():
 
 raw = load_data()
 
-# USDJPY
+# USDJPY（為替）
 fx = raw["USDJPY=X"].dropna()
 
 # ----------------------------------------
@@ -50,7 +51,7 @@ for ticker in TARGET_ETFS:
 
     usd_series = raw[ticker].dropna()
 
-    # 円建てかドル建てか選択
+    # 円建て or ドル建て
     if currency == "JPY":
         fx_aligned = fx.reindex(usd_series.index).ffill()
         price = usd_series * fx_aligned
@@ -72,6 +73,8 @@ for ticker in TARGET_ETFS:
     with st.expander(title):
 
         if view_mode == "Price":
+            import plotly.graph_objects as go
+
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=df.index, y=df["Close"],
@@ -85,18 +88,19 @@ for ticker in TARGET_ETFS:
             st.plotly_chart(fig, use_container_width=True)
 
         else:  # MACD+RSI
+            import plotly.graph_objects as go
+
             macd_line, signal_line = macd(df["Close"])
             rsi_line = rsi(df["Close"])
 
+            # --- MACD ---
             fig = go.Figure()
-
             fig.add_trace(go.Scatter(
                 x=df.index, y=macd_line, name="MACD"
             ))
             fig.add_trace(go.Scatter(
                 x=df.index, y=signal_line, name="Signal"
             ))
-
             fig.update_layout(
                 height=300,
                 margin=dict(l=20, r=20, t=40, b=20),
@@ -104,6 +108,7 @@ for ticker in TARGET_ETFS:
             )
             st.plotly_chart(fig, use_container_width=True)
 
+            # --- RSI ---
             fig2 = go.Figure()
             fig2.add_trace(go.Scatter(
                 x=df.index, y=rsi_line, name="RSI"
